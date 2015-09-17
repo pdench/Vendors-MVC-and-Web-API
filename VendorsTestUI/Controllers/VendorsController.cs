@@ -9,26 +9,33 @@ using System.Web.Mvc;
 using VendorTest2.Models;
 using VendorsTestUI.Models;
 using Newtonsoft.Json;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
 
 namespace VendorsTestUI.Controllers
 {
     public class VendorsController : Controller
     {
 
-        protected string serviceUrlBase = "http://localhost:8200/api/vendors";
-        WebClient client = new WebClient();
-        string output = "";
-
-        private VendorsTestUIContext db = new VendorsTestUIContext();
+        protected string serviceUrlBase = "http://localhost:8200/";
+        WebClient webClient = new WebClient();
 
         // GET: Vendors
         public ActionResult Index()
         {
 
-            IEnumerable<Vendor> vendList;
+            IEnumerable<Vendor> vendList = null;
 
-            output = client.DownloadString(serviceUrlBase);
-            vendList = JsonConvert.DeserializeObject<List<Vendor>>(output);
+            HttpClient client = GetNewHttpClient();
+
+            // List all Vendors.  
+            HttpResponseMessage response = client.GetAsync("api/vendors").Result;    
+            if (response.IsSuccessStatusCode)
+            {
+                var vendors = response.Content.ReadAsStringAsync().Result;
+                vendList = JsonConvert.DeserializeObject<List<Vendor>>(vendors);
+            }  
 
             return View("Index", vendList);
         }
@@ -40,10 +47,9 @@ namespace VendorsTestUI.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            
-            serviceUrlBase += "/" + id.ToString();
-            output = client.DownloadString(serviceUrlBase);
-            Vendor vendor = JsonConvert.DeserializeObject<Vendor>(output);
+
+            Vendor vendor = GetVendor(id);
+
             if (vendor == null)
             {
                 return HttpNotFound();
@@ -66,8 +72,12 @@ namespace VendorsTestUI.Controllers
         {
             if (ModelState.IsValid)
             {
-                db.Vendors.Add(vendor);
-                db.SaveChanges();
+                //db.Vendors.Add(vendor);
+                //db.SaveChanges();
+                HttpClient client = GetNewHttpClient();
+                string thisUrl = "api/vendors/";
+                var response = client.PostAsJsonAsync(thisUrl, vendor).Result;
+                
                 return RedirectToAction("Index");
             }
 
@@ -81,7 +91,7 @@ namespace VendorsTestUI.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Vendor vendor = db.Vendors.Find(id);
+            Vendor vendor = GetVendor(id);
             if (vendor == null)
             {
                 return HttpNotFound();
@@ -98,8 +108,12 @@ namespace VendorsTestUI.Controllers
         {
             if (ModelState.IsValid)
             {
-                db.Entry(vendor).State = EntityState.Modified;
-                db.SaveChanges();
+                //db.Entry(vendor).State = EntityState.Modified;
+                //db.SaveChanges();
+                HttpClient client = GetNewHttpClient();
+                string thisUrl = "api/vendors/" + vendor.Id.ToString();
+                var response = client.PostAsJsonAsync(thisUrl, vendor).Result;
+                
                 return RedirectToAction("Index");
             }
             return View(vendor);
@@ -112,7 +126,7 @@ namespace VendorsTestUI.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Vendor vendor = db.Vendors.Find(id);
+            Vendor vendor = GetVendor(id);
             if (vendor == null)
             {
                 return HttpNotFound();
@@ -125,13 +139,10 @@ namespace VendorsTestUI.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-            //Vendor vendor = db.Vendors.Find(id);
-            //db.Vendors.Remove(vendor);
-            //db.SaveChanges();
-
-            serviceUrlBase += "/delete/" + id.ToString();
-            output = client.DownloadString(serviceUrlBase);
-
+            HttpClient client = GetNewHttpClient();
+            string thisUrl = "api/vendors/" +id.ToString();
+            var response = client.DeleteAsync(thisUrl).Result;
+            
             return RedirectToAction("Index");
         }
 
@@ -139,9 +150,40 @@ namespace VendorsTestUI.Controllers
         {
             if (disposing)
             {
-                db.Dispose();
+                webClient.Dispose();
             }
             base.Dispose(disposing);
+        }
+
+        /// <summary>
+        /// Creates a new Http Client object and sets basic properties used by all methods
+        /// </summary>
+        /// <returns></returns>
+        private HttpClient GetNewHttpClient()
+        {
+            HttpClient client = new HttpClient();
+            client.BaseAddress = new Uri(serviceUrlBase);
+            // Add an Accept header for JSON format.  
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            return client;
+        }
+
+        private Vendor GetVendor(int? Id)
+        {
+
+            HttpClient client = GetNewHttpClient();
+            string thisUrl = "api/vendors/" + Id.ToString();
+            HttpResponseMessage response = client.GetAsync(thisUrl).Result;
+            Vendor vendor = null;
+
+            if (response.IsSuccessStatusCode)
+            {
+                var thisVendor = response.Content.ReadAsStringAsync().Result;
+                vendor = JsonConvert.DeserializeObject<Vendor>(thisVendor);
+            }
+
+            return vendor;
+            
         }
     }
 }

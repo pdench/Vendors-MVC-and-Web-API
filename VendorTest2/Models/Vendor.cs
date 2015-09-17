@@ -19,11 +19,11 @@ namespace VendorTest2.Models
         public string VendorName { get; set; }
         [Display(Name = "Valid From")]
         [DataType(DataType.Date)]
-        [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy}")]
+        [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
         public DateTime ValidFrom { get; set; }
         [Display(Name = "Valid Thru")]
         [DataType(DataType.Date)]
-        [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy}")]
+        [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}",ApplyFormatInEditMode=true)]
         public DateTime ValidThru { get; set; }
     }
 }
