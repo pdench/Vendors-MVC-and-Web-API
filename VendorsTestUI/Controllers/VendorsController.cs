@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using PagedList;
 
 namespace VendorsTestUI.Controllers
 {
@@ -22,9 +23,37 @@ namespace VendorsTestUI.Controllers
         WebClient webClient = new WebClient();
 
         // GET: Vendors
-        public ActionResult Index()
+        public ActionResult Index(string sortOrder, string currentSort, string sortDir, int? page, string mode)
         {
 
+            int pageSize = 10;
+            int pageIndex = 1;
+            pageIndex = page.HasValue ? Convert.ToInt32(page) : 1;
+
+            string updateMode = String.IsNullOrEmpty(mode) ? "SORT" : mode;
+            sortOrder = String.IsNullOrEmpty(sortOrder) ? "VendorCode" : sortOrder;
+            sortDir = String.IsNullOrEmpty(sortDir) ? "A" : sortDir;
+            ViewBag.currentSort = sortOrder;
+ 
+            if (sortOrder == currentSort && updateMode.ToUpper()=="SORT")
+            {
+                switch (sortDir)
+                {
+                    case "A":
+                        sortDir = "D";
+                        break;
+                    case "D":
+                        sortDir = "A";
+                        break;
+                    default:
+                        sortDir = "A";
+                        break;
+                }
+            }
+            else if (updateMode.ToUpper()=="SORT") { sortDir = "A"; }
+            ViewBag.sortDir = sortDir;
+
+            IPagedList<Vendor> vendorsPaged = null;
             IEnumerable<Vendor> vendList = null;
 
             HttpClient client = GetNewHttpClient();
@@ -34,10 +63,33 @@ namespace VendorsTestUI.Controllers
             if (response.IsSuccessStatusCode)
             {
                 var vendors = response.Content.ReadAsStringAsync().Result;
-                vendList = JsonConvert.DeserializeObject<List<Vendor>>(vendors);
-            }  
+                vendList = JsonConvert.DeserializeObject<IEnumerable<Vendor>>(vendors);
+            }
 
-            return View("Index", vendList);
+            switch (sortOrder)
+            {
+                case "VendorCode":
+                    if (sortDir == "A") { vendorsPaged = vendList.OrderBy(v => v.VendorCode).ToPagedList(pageIndex,pageSize); }
+                    else { vendorsPaged = vendList.OrderByDescending(v => v.VendorCode).ToPagedList(pageIndex, pageSize); }
+                    break;
+                case "VendorName":
+                    if (sortDir == "A") { vendorsPaged = vendList.OrderBy(v => v.VendorName).ToPagedList(pageIndex, pageSize); }
+                    else { vendorsPaged = vendList.OrderByDescending(v => v.VendorName).ToPagedList(pageIndex, pageSize); }
+                    break;
+                case "ValidFrom":
+                    if (sortDir == "A") { vendorsPaged = vendList.OrderBy(v => v.ValidFrom).ToPagedList(pageIndex, pageSize); }
+                    else { vendorsPaged = vendList.OrderByDescending(v => v.ValidFrom).ToPagedList(pageIndex, pageSize); }
+                    break;
+                case "ValidThru":
+                    if (sortDir == "A") { vendorsPaged = vendList.OrderBy(v => v.ValidThru).ToPagedList(pageIndex, pageSize); }
+                    else { vendorsPaged = vendList.OrderByDescending(v => v.ValidThru).ToPagedList(pageIndex, pageSize); }
+                    break;
+                default:
+                    vendorsPaged = vendList.OrderBy(v => v.VendorCode).ToPagedList(pageIndex, pageSize); 
+                    break;
+            }
+
+            return View("Index", vendorsPaged);
         }
 
         // GET: Vendors/Details/5

@@ -1,7 +1,9 @@
-﻿@model IEnumerable<VendorTest2.Models.Vendor>
+﻿@model PagedList.IPagedList<VendorTest2.Models.Vendor>
+
+@using PagedList.Mvc;
 
 @{
-    ViewBag.Title = "Index";
+    ViewBag.Title = "Vendor List";
 }
 
 <h2>Index</h2>
@@ -14,16 +16,16 @@
         <table class="table table-striped table-hover">
             <tr>
                 <th>
-                    @Html.DisplayNameFor(model => model.VendorCode)
+                    @Html.ActionLink("Vendor Code", "Index", new { sortOrder = "VendorCode", currentSort = ViewBag.currentSort, sortDir = ViewBag.sortDir, mode = "Sort" })
                 </th>
                 <th>
-                    @Html.DisplayNameFor(model => model.VendorName)
+                    @Html.ActionLink("Vendor Name", "Index", new { sortOrder = "VendorName", currentSort = ViewBag.currentSort, sortDir = ViewBag.sortDir, mode = "Sort" })
                 </th>
                 <th>
-                    @Html.DisplayNameFor(model => model.ValidFrom)
+                    @Html.ActionLink("Valid From", "Index", new { sortOrder = "ValidFrom", currentSort = ViewBag.currentSort, sortDir = ViewBag.sortDir, mode = "Sort" })
                 </th>
                 <th>
-                    @Html.DisplayNameFor(model => model.ValidThru)
+                    @Html.ActionLink("Valid Thru", "Index", new { sortOrder = "ValidThru", currentSort = ViewBag.currentSort, sortDir = ViewBag.sortDir, mode = "Sort" })
                 </th>
                 <th></th>
             </tr>
@@ -52,5 +54,12 @@
             }
 
         </table>
+        <br />
+        <div id='Paging' style="text-align:center">
+            Page @(Model.PageCount < Model.PageNumber ? 0 : Model.PageNumber)
+            of @Model.PageCount
+
+            @Html.PagedListPager(Model, page => Url.Action("Index", new { page, sortOrder = ViewBag.currentSort, currentSort = ViewBag.currentSort, sortDir = ViewBag.sortDir, mode="Page" }))
+        </div>
 </div>
 </div>
